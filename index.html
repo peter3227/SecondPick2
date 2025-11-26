@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecondPick</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #4A60E3;
+            --light-blue: #EAF0FF;
+            --text-dark: #333333;
+            --text-gray: #6C757D;
+            --bg-light: #F8F9FA;
+            --border-light: #DEE2E6;
+            --white: #FFFFFF;
+            --joongna-color: #38c64d;
+            --danggeun-color: #ff914d;
+            --bunjang-color: #3b3b3b;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            margin: 0;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 40px;
+            background-color: var(--white);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            text-decoration: none;
+        }
+        .header-icons {
+            display: flex;
+            align-items: center;
+        }
+        .header-icons .icon {
+            margin-left: 20px;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .header-icons .icon:hover {
+            opacity: 0.8;
+        }
+        .header-icons .user-icon {
+            background-color: var(--primary-blue);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--white);
+            font-size: 16px;
+            width: 32px;
+            height: 32px;
+        }
+        .header-icons .user-icon i {
+            font-size: 16px;
+        }
+
+        /* Main Search Section (Landing Page) */
+        .main-search-section {
+            background-color: var(--white);
+            padding: 80px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        .main-search-section h1 {
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--text-dark);
+        }
+        .main-search-section p {
+            font-size: 18px;
+            color: var(--text-gray);
+            margin-bottom: 40px;
+        }
+        .search-form-main {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 2px solid var(--primary-blue);
+            border-radius: 50px;
+            overflow: hidden;
+            background-color: var(--white);
+        }
+        .search-form-main i {
+            color: var(--primary-blue);
+            padding-left: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .search-form-main input[type="text"] {
+            flex-grow: 1;
+            padding: 15px 10px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+        }
+        .search-form-main button {
+            padding: 15px 30px;
+            background-color: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .search-form-main button:hover {
+            background-color: #3a4bbd;
+        }
+        .recent-search {
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--text-gray);
+        }
+        .recent-search strong {
+            color: var(--primary-blue);
+            font-weight: 700;
+        }
+
+        /* Feature Cards Section */
+        .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 0 20px;
+            margin-top: -30px; /* 메인 섹션과 겹치도록 조정 */
+        }
+        .feature-card {
+            background-color: var(--white);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            text-align: left;
+            transition: transform 0.2s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .feature-card .icon-box {
+            width: 40px;
+            height: 40px;
+            background-color: var(--light-blue);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            color: var(--primary-blue);
+            font-size: 18px;
+        }
+        .feature-card h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .feature-card p {
+            font-size: 15px;
+            color: var(--text-gray);
+            line-height: 1.5;
+        }
+        
+        /* Search Results Section */
+        .search-results-section {
+            padding: 30px 0;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .results-header h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+        }
+        .results-header p {
+            font-size: 16px;
+            color: var(--text-gray);
+            margin: 0 0 30px 0;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 20px;
+        }
+        .results-header strong {
+            color: var(--primary-blue);
+        }
+
+        .platform-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .platform-summary-card {
+            background-color: var(--white);
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            text-align: left;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        .platform-summary-card h3 {
+            font-size: 18px;
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .platform-summary-card .price {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .platform-summary-card .meta {
+            font-size: 14px;
+            color: var(--text-gray);
+        }
+        .platform-summary-card .icon-box {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            width: 30px;
+            height: 30px;
+            background-color: var(--light-blue);
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--primary-blue);
+            font-size: 14px;
+        }
+        /* Platform specific colors */
+        .중고나라 .price { color: var(--joongna-color); }
+        .당근마켓 .price { color: var(--danggeun-color); }
+        .번개장터 .price { color: var(--bunjang-color); }
+
+
+        .sort-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .sort-buttons button {
+            padding: 8px 15px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            background-color: var(--white);
+            color: var(--text-dark);
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sort-buttons button.active {
+            background-color: var(--primary-blue);
+            color: var(--white);
+            border-color: var(--primary-blue);
+        }
+        .sort-buttons button:not(.active):hover {
+            background-color: var(--bg-light);
+        }
+
+        /* Product List */
+        .product-list {
+            display: grid;
+            gap: 15px;
+        }
+        .product-card {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: var(--white);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+            line-height: 1.4;
+        }
+        .product-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        .product-card img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 20px;
+        }
+        .product-info {
+            flex-grow: 1;
+        }
+        .product-info h4 {
+            font-size: 18px;
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+        .product-info .price {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 5px;
+        }
+        .product-info .platform {
+            font-size: 13px;
+            color: var(--text-gray);
+            font-weight: 500;
+        }
+        .product-card .date {
+            font-size: 14px;
+            color: var(--text-gray);
+            margin-left: auto;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none; /* Initial state */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background-color: var(--white);
+            padding: 30px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        .modal-content h3 {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .modal-content .close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-gray);
+            cursor: pointer;
+        }
+        .modal-content .input-group {
+            margin-bottom: 20px;
+        }
+        .modal-content input {
+            width: 90%; 
+            padding: 12px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            font-size: 16px;
+            outline-color: var(--primary-blue);
+        }
+        .modal-content button.primary {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .modal-content button.primary:hover {
+            background-color: #3a4bbd;
+        }
+        .modal-content .link-text {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-중고나라 { color: var(--joongna-color); }
+        .text-당근마켓 { color: var(--danggeun-color); }
+        .text-번개장터 { color: var(--bunjang-color); }
+        
+        /* Responsive */
+        @media (max-width: 900px) {
+            .feature-cards, .platform-summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 600px) {
+            header {
+                padding: 10px 20px;
+            }
+            .main-search-section {
+                padding: 50px 20px;
+            }
+            .search-form-main {
+                border-radius: 8px;
+            }
+            .product-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .product-card img {
+                margin-bottom: 15px;
+                margin-right: 0;
+            }
+            .product-card .date {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="logo">SecondPick</a>
+        <div class="header-icons">
+            <i class="fa-solid fa-arrow-right-to-bracket icon" onclick="openModal('loginModal')"></i>
+            <div class="icon user-icon" id="userIcon" onclick="openModal('loginModal')">
+                <i class="fa-solid fa-user"></i>
+            </div>
+        </div>
+    </header>
+
+    {% if not keyword %}
+    <div class="main-search-section">
+        <h1>중고거래, 한 번에 검색하세요</h1>
+        <p>중고나라, 당근마켓, 번개장터를 통합 검색하고 가격을 비교하세요</p>
+        <form class="search-form-main" method="GET" action="/">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" name="keyword" placeholder="찾고 싶은 상품을 검색해보세요" value="아이폰 14">
+            <button type="submit">검색</button>
+        </form>
+        <div class="recent-search">최근 검색: <strong>아이폰 14</strong></div>
+    </div>
+
+    <div class="container feature-cards">
+        <div class="feature-card">
+            <div class="icon-box"><i class="fa-solid fa-chart-line"></i></div>
+            <h3>가격 시세 분석</h3>
+            <p>플랫폼별 평균 가격과 거래 추세를 한눈에 확인하세요.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box"><i class="fa-solid fa-bell"></i></div>
+            <h3>키워드 알림</h3>
+            <p>원하는 상품이 등록되면 즉시 이메일로 알려드립니다.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box"><i class="fa-solid fa-box-open"></i></div>
+            <h3>통합 검색</h3>
+            <p>3개 플랫폼을 동시에 검색하여 시간을 절약하세요.</p>
+        </div>
+    </div>
+    {% else %}
+    <div class="container search-results-section">
+        <div class="results-header">
+            <h2>'{{ keyword }}' 검색 결과</h2>
+            <p>총 <strong>{{ items | length }}</strong>개의 상품</p> 
+        </div>
+
+        <div class="platform-summary-grid">
+            {% for platform, stats in platform_stats.items() %}
+            <div class="platform-summary-card {{ platform }}">
+                <h3>{{ platform }}</h3>
+                <div class="price">
+                    {% if stats.num_items > 0 %}
+                        {{ stats.avg_price | format_currency }}원
+                    {% else %}
+                        0원
+                    {% endif %}
+                </div>
+                <div class="meta">매물 {{ stats.num_items }}개 · 평균가</div>
+                <div class="icon-box"><i class="fa-solid fa-box-open"></i></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="sort-buttons">
+            <a href="/?keyword={{ keyword }}&sort=latest">
+                <button class="{% if sort_by == 'latest' %}active{% endif %}">최신순</button>
+            </a>
+            <a href="/?keyword={{ keyword }}&sort=low_price">
+                <button class="{% if sort_by == 'low_price' %}active{% endif %}">낮은 가격순</button>
+            </a>
+            <a href="/?keyword={{ keyword }}&sort=high_price">
+                <button class="{% if sort_by == 'high_price' %}active{% endif %}">높은 가격순</button>
+            </a>
+        </div>
+
+        <div class="product-list">
+            {% for item in items %}
+            <a href="{{ item.link }}" target="_blank" style="text-decoration: none; color: inherit;">
+                <div class="product-card">
+                    <img src="{{ item.img_url }}" alt="{{ item.title }}">
+                    <div class="product-info">
+                        <h4>{{ item.title }}</h4>
+                        <p class="price">{{ item.price | format_currency }}원</p>
+                        <p class="platform text-{{ item.platform }}">{{ item.platform }}</p>
+                    </div>
+                    <span class="date">{{ item.date_posted }}</span>
+                </div>
+            </a>
+            {% endfor %}
+            {% if not items %}
+                <p class="text-center text-gray">검색 결과를 찾을 수 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeModal('loginModal')">&times;</button>
+            <h3>로그인</h3>
+            <form>
+                <div class="input-group">
+                    <input type="email" placeholder="이메일" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" placeholder="비밀번호 (최소 8자, 특수문자 포함)" required>
+                </div>
+                <button type="submit" class="primary">로그인</button>
+            </form>
+            <a class="link-text" onclick="openModal('signupModal'); closeModal('loginModal');">회원가입하기</a>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="signupModal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeModal('signupModal')">&times;</button>
+            <h3>회원가입</h3>
+            <form>
+                <div class="input-group">
+                    <input type="email" placeholder="이메일" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" placeholder="비밀번호 (최소 8자, 특수문자 포함)" required>
+                </div>
+                <div class="input-group">
+                    <input type="text" placeholder="닉네임" required>
+                </div>
+                <button type="submit" class="primary">회원가입</button>
+            </form>
+            <a class="link-text" onclick="openModal('loginModal'); closeModal('signupModal');">로그인하기</a>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // 모달 오버레이 클릭 시 닫기
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
