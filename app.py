@@ -1,13 +1,10 @@
 import ssl
-
-# SSL 인증서 검증 실패를 무시하고 진행하도록 설정
 ssl._create_default_https_context = ssl._create_unverified_context
 
 import time
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 from datetime import datetime, timedelta 
 
-# WebDriver는 중고나라, 당근마켓에만 사용
 import undetected_chromedriver as uc 
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
@@ -22,11 +19,11 @@ import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning 
 from urllib.parse import quote 
 
-
-# 터미널 인코딩 문제 방지
 sys.stdout.reconfigure(encoding='utf-8')
 
 app = Flask(__name__)
+
+app.secret_key = 'your_unique_and_complex_secret_key'
 
 # --- Jinja2 필터 등록 (가격 포맷) ---
 def format_currency(value):
@@ -71,13 +68,13 @@ def get_webdriver():
         
         try:
              driver.execute_cdp_cmd(
-                "Emulation.setGeolocationOverride",
-                {
-                    "latitude": 37.4979, 
-                    "longitude": 127.0276, 
-                    "accuracy": 100
-                }
-            )
+                 "Emulation.setGeolocationOverride",
+                 {
+                     "latitude": 37.4979, 
+                     "longitude": 127.0276, 
+                     "accuracy": 100
+                 }
+             )
         except Exception as e:
             print(f"위치 정보 설정 실패: {e}")
             
@@ -105,7 +102,7 @@ def clean_price_string(price_raw):
     return int(price_str) if price_str.isdigit() and len(price_str) < 15 else 0
 
 
-# --- New Helper Function: 시간 차이 계산 ---
+# --- Helper Function: 시간 차이 계산 ---
 def calculate_time_ago(date_string):
     """
     중고나라/당근마켓의 시간/날짜 문자열을 파싱하여 'X분 전' 또는 'X시간 전'으로 변환
@@ -121,7 +118,6 @@ def calculate_time_ago(date_string):
         hours = int(re.sub(r'[^\d]', '', date_string))
         return f"{hours}시간 전"
 
-    # 당근마켓: '3일 전', '1주 전' 처리
     if "일 전" in date_string:
         days = int(re.sub(r'[^\d]', '', date_string))
         if days == 0: return "1시간 전"
@@ -131,30 +127,27 @@ def calculate_time_ago(date_string):
         weeks = int(re.sub(r'[^\d]', '', date_string))
         return f"{weeks}주 전"
 
-    # 중고나라: '방금 전' 또는 '1분 이내' 처리
     if "방금 전" in date_string or "1분 이내" in date_string:
         return "방금 전"
         
-    # 중고나라: 'yyyy.mm.dd' 형식 (예: 2025.11.26)
     try:
         if len(date_string) == 10 and date_string.count('.') == 2:
             post_date = datetime.strptime(date_string, "%Y.%m.%d")
             diff = now - post_date
             
             if diff.days == 0:
-                # 오늘 날짜지만 시간이 명시되지 않았으므로 '오늘'로 표시
                 return "오늘"
             elif diff.days < 7:
                 return f"{diff.days}일 전"
             else:
-                return date_string # 7일 이상이면 원래 날짜 문자열 유지
+                return date_string
     except:
         pass
     
     return date_string
 
 
-# --- 2. 중고나라 크롤링 함수 (시간 차이 계산 적용) ---
+# --- 2. 중고나라 크롤링 함수 ---
 def run_joongna_crawl(keyword, driver):
     crawled_data = []
     
@@ -184,9 +177,8 @@ def run_joongna_crawl(keyword, driver):
                 date_posted = "날짜 정보 없음"
                 try:
                     date_elem = item.find_element(By.CSS_SELECTOR, 'span.product-card-extra')
-                    # 중고나라는 '지역 · 시간' 형식에서 시간 부분 추출
                     date_posted_raw = date_elem.text.split('·')[-1].strip() 
-                    date_posted = calculate_time_ago(date_posted_raw) # <<<--- 시간 차이 계산 적용
+                    date_posted = calculate_time_ago(date_posted_raw) 
                 except:
                     pass
 
@@ -200,28 +192,26 @@ def run_joongna_crawl(keyword, driver):
                 crawled_data.append({
                     'platform': '중고나라', 
                     'title': title,
-                    'price': clean_price,      
+                    'price': clean_price, 
                     'link': link,
                     'img_url': img_url,
-                    'date_posted': date_posted # <<<--- 변환된 시간 정보
+                    'date_posted': date_posted 
                 })
             except Exception as e:
                 continue
-             
+              
     except Exception as e:
         print(f"❌ 중고나라 크롤링 중 치명적인 오류 발생: {e}")
     
     return crawled_data
 
 
-# --- 3. 당근마켓 크롤링 함수 (JSON-LD 유지) ---
+# --- 3. 당근마켓 크롤링 함수 ---
 def run_danggeun_crawl(keyword, driver):
     crawled_data = []
     
     encoded_keyword = quote(keyword)
     url = f"https://www.daangn.com/search/{encoded_keyword}" 
-    
-    print(f"✅ 당근마켓 PC 웹 크롤링 시작 (JSON-LD 파싱): {url}")
     
     try:
         driver.get(url)
@@ -232,7 +222,6 @@ def run_danggeun_crawl(keyword, driver):
         json_match = re.search(r'<script type="application/ld\+json">(.*?)</script>', page_source, re.DOTALL)
         
         if not json_match:
-            print("🚨🚨🚨 당근마켓: JSON-LD 스크립트 태그를 찾을 수 없습니다. (크롤링 실패) 🚨🚨🚨")
             return []
             
         json_ld_string = json_match.group(1).strip()
@@ -240,11 +229,9 @@ def run_danggeun_crawl(keyword, driver):
         try:
             data = json.loads(json_ld_string)
         except json.JSONDecodeError as e:
-            print(f"❌ 당근마켓: JSON-LD 데이터 파싱 오류가 발생했습니다. {e}")
             return []
 
         if 'itemListElement' not in data:
-            print("⚠️ 당근마켓: JSON-LD에 itemListElement가 없습니다. (검색 결과 0건 또는 구조 변경) ⚠️")
             return []
             
         for list_item in data['itemListElement'][:10]:
@@ -262,7 +249,6 @@ def run_danggeun_crawl(keyword, driver):
                 if 'OutOfStock' in availability or float(price_raw) == 0:
                     continue
 
-                # JSON-LD로는 정확한 'X분 전' 시간 정보를 얻을 수 없어 임시 문자열 사용
                 date_posted = "날짜 정보 없음" 
 
                 clean_price = int(float(price_raw))
@@ -277,7 +263,7 @@ def run_danggeun_crawl(keyword, driver):
                 })
             except Exception as e:
                 continue
-             
+              
     except Exception as e:
         print(f"❌ 당근마켓 크롤링 중 치명적인 오류 발생: {e}")
     
@@ -286,43 +272,42 @@ def run_danggeun_crawl(keyword, driver):
 
 # --- 4. 번개장터 크롤링 함수 (제외 유지) ---
 def run_bunjang_crawl(keyword):
-    print("✅ 번개장터 크롤링 제외됨")
     return []
 
 # --- 5. 메인 라우트 통합 ---
 @app.route('/', methods=['GET'])
 def index():
     keyword = request.args.get('keyword')
-    all_items = []
-    platform_stats = {}
-    
-    joongna_items = []
-    danggeun_items = []
-    bunjang_items = []
+    sort_by = request.args.get('sort', 'latest')
 
-    if keyword:
+    all_items = []
+    platform_stats = session.get('platform_stats', {}) 
+
+    # 1. 세션에서 데이터 로드 시도
+    if keyword and (keyword != session.get('last_keyword') or 'all_items' not in session):
+        
         driver = None
         try:
-            # 1. WebDriver 초기화 (중고나라/당근마켓용)
             driver = get_webdriver() 
+            
             if driver:
                 joongna_items = run_joongna_crawl(keyword, driver)
                 danggeun_items = run_danggeun_crawl(keyword, driver)
-            
-            # 2. 번개장터 크롤링 시도 (제외됨)
+            else:
+                joongna_items = []
+                danggeun_items = []
+
             bunjang_items = run_bunjang_crawl(keyword) 
 
             all_items.extend(joongna_items)
             all_items.extend(danggeun_items)
             all_items.extend(bunjang_items)
 
-
             # --- 플랫폼별 통계 계산 ---
             def calculate_stats(items):
                 prices = [item['price'] for item in items if item['price'] > 0]
                 if not prices:
                     return {'avg_price': 0, 'num_items': 0}
-                
                 avg = int(sum(prices) / len(prices))
                 return {
                     'avg_price': avg,
@@ -332,27 +317,49 @@ def index():
             platform_stats['중고나라'] = calculate_stats(joongna_items)
             platform_stats['당근마켓'] = calculate_stats(danggeun_items)
             platform_stats['번개장터'] = calculate_stats(bunjang_items) 
-
+            
+            session['all_items'] = all_items 
+            session['last_keyword'] = keyword
+            session['platform_stats'] = platform_stats
+            
         finally:
             if driver:
-                driver.quit() 
+                driver.quit()
+    
+    # 2. 크롤링 없이 세션에서 데이터 사용
+    else:
+        all_items = session.get('all_items', [])
+        
+        if not keyword:
+            all_items = []
 
-
-    # --- 정렬 ---
-    sort_by = request.args.get('sort', 'latest') 
+    # --- 가격 통계 계산 및 정렬 ---
+    min_price = 0
+    max_price = 0
+    avg_price_all = 0 
+    
     if all_items:
+        valid_prices = [item['price'] for item in all_items if item['price'] > 0]
+        
+        if valid_prices:
+            min_price = min(valid_prices)
+            max_price = max(valid_prices)
+            avg_price_all = int(sum(valid_prices) / len(valid_prices))
+            
+        # 정렬
         if sort_by == 'low_price':
             all_items.sort(key=lambda x: x['price'])
         elif sort_by == 'high_price':
             all_items.sort(key=lambda x: x['price'], reverse=True)
-
-
+            
     return render_template('index.html', 
                            items=all_items, 
                            keyword=keyword, 
                            platform_stats=platform_stats,
-                           sort_by=sort_by)
+                           sort_by=sort_by,
+                           min_price=min_price, 
+                           max_price=max_price,
+                           avg_price_all=avg_price_all) 
 
 if __name__ == '__main__':
-    # 기본 Flask 서버 실행
     app.run(debug=True)

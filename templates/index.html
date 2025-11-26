@@ -335,6 +335,42 @@
             color: var(--text-gray);
             margin-left: auto;
         }
+        
+        /* 👈 가격 바 스타일 추가 시작 */
+        .price-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: var(--bg-light);
+            border-radius: 5px;
+            margin-top: 10px;
+            position: relative;
+        }
+        .price-bar-min-max {
+            width: 100%;
+            height: 100%;
+            background-color: var(--light-blue);
+            border-radius: 5px;
+        }
+        .price-bar-current {
+            position: absolute;
+            top: -3px; /* 중앙 정렬을 위해 위로 살짝 올림 */
+            width: 16px; 
+            height: 16px;
+            background-color: var(--primary-blue);
+            border: 2px solid var(--white);
+            border-radius: 50%;
+            z-index: 10;
+            transform: translateX(-50%); /* 중심 맞추기 */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .price-bar-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-gray);
+            margin-top: 5px;
+        }
+        /* 👈 가격 바 스타일 추가 끝 */
 
         /* Modal */
         .modal-overlay {
@@ -528,6 +564,22 @@
 
         <div class="product-list">
             {% for item in items %}
+            {% set current_price = item.price %}
+            
+            {# 최저가와 최고가 차이를 계산합니다. #}
+            {% set price_range = max_price - min_price %}
+            
+            {# 현재 가격이 전체 범위에서 어느 위치에 있는지 백분율로 계산 #}
+            {% if price_range > 0 and current_price > 0 %}
+                {% set position_percent = ((current_price - min_price) / price_range) * 100 %}
+            {% elif current_price > 0 %}
+                {# 가격 범위가 0이지만 가격이 0이 아닌 경우 (모든 가격이 같음) #}
+                {% set position_percent = 50 %} 
+            {% else %}
+                {# 가격이 0원인 경우 (나눔 등) #}
+                {% set position_percent = 0 %} 
+            {% endif %}
+
             <a href="{{ item.link }}" target="_blank" style="text-decoration: none; color: inherit;">
                 <div class="product-card">
                     <img src="{{ item.img_url }}" alt="{{ item.title }}">
@@ -535,6 +587,19 @@
                         <h4>{{ item.title }}</h4>
                         <p class="price">{{ item.price | format_currency }}원</p>
                         <p class="platform text-{{ item.platform }}">{{ item.platform }}</p>
+                        
+                        {# 👈 가격 비교 그래프 섹션 시작 #}
+                        {% if max_price > 0 and max_price > min_price %}
+                        <div class="price-bar-container">
+                            <div class="price-bar-min-max"></div>
+                            <div class="price-bar-current" style="left: {{ position_percent }}%;"></div>
+                        </div>
+                        <div class="price-bar-labels">
+                            <span>{{ min_price | format_currency }}원</span>
+                            <span>{{ max_price | format_currency }}원</span>
+                        </div>
+                        {% endif %}
+                        {# 👈 가격 비교 그래프 섹션 끝 #}
                     </div>
                     <span class="date">{{ item.date_posted }}</span>
                 </div>
