@@ -4,8 +4,18 @@ import re
 import json
 import random
 import sys
+import pymysql
 from urllib.parse import quote
 from datetime import datetime, timedelta
+
+# DB 설정
+db_config = {
+    'host': 'localhost',
+    'user': 'root',
+    'password': 'peter3227',
+    'db': 'joongna_db',
+    'charset': 'utf8'
+}
 
 # Selenium
 import undetected_chromedriver as uc
@@ -15,8 +25,21 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 # Flask
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, redirect, url_for, flash
 
+#로그인/로그아웃, 회원가입 
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# Flask 로그인 매니저
+app = Flask(__name__)
+app.secret_key = 'your-secret-key-change-this-in-production'  # 실제 운영시 변경 필요
+
+# Flask-Login 설정
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = '로그인이 필요한 서비스입니다.'
 
 # sys.stdout.reconfigure(encoding='utf-8') # Flask 환경에서는 필요하지 않습니다.
 
@@ -423,8 +446,161 @@ class App:
                                max_price=max_price,
                                avg_price_all=avg_price_all)
 
+# ====================================================================
+# 6. User 클래스 정의
+# ====================================================================
+class User(UserMixin):
+    def __init__(self, user_id, email, nickname):
+        self.id = user_id
+        self.email = email
+        self.nickname = nickname
 
+# ====================================================================
+# 7. 로그인/로그아웃, 회원가입 라우트
+# ====================================================================
+@login_manager.user_loader
+def load_user(user_id):
+    """세션에서 사용자 정보 로드"""
+    conn = None
+    try:
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, email, nickname FROM users WHERE user_id = %s", (user_id,))
+        user_data = cursor.fetchone()
+    
+        if user_data:
+            return User(user_data[0], user_data[1], user_data[2])
+    except Exception as e:
+           print(f"❌ 사용자 로드 오류: {e}")
+    finally:
+        if conn:
+            conn.close()
+    return None
+    
+# 회원가입 라우트
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        nickname = request.form.get('nickname', '').strip()
+    
+    # 입력값 검증
+    if not email or not password or not nickname:
+        flash('모든 항목을 입력해주세요.', 'error')
+        return redirect(url_for('register'))
+        
+    # 비밀번호 길이 검증
+    if len(password) < 8:
+        flash('비밀번호는 8자 이상이어야 합니다.', 'error')
+        return redirect(url_for('register'))
+        
+    conn = None
+    try:
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor()
+            
+        # 이메일 중복 확인
+        cursor.execute("SELECT email FROM users WHERE email = %s", (email,))
+        if cursor.fetchone():
+            flash('이미 사용 중인 이메일입니다.', 'error')
+            return redirect(url_for('register'))
+            
+        # 비밀번호 해싱
+        hashed_password = generate_password_hash(password)
+        
+        # 사용자 등록
+        cursor.execute(
+            "INSERT INTO users (email, password, nickname) VALUES (%s, %s, %s)",
+            (email, hashed_password, nickname)
+        )
+        conn.commit()
+            
+        flash('회원가입이 완료되었습니다! 로그인해주세요.', 'success')
+        return redirect(url_for('login'))
+        
+    except Exception as e:
+        flash(f'회원가입 중 오류가 발생했습니다: {str(e)}', 'error')
+        return redirect(url_for('register'))
+    finally:
+        if conn:
+            conn.close()
+
+    return render_template('register.html')
+
+# 로그인 라우트
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        
+    if not email or not password:
+        flash('이메일과 비밀번호를 입력해주세요.', 'error')
+        return redirect(url_for('login'))
+        
+    conn = None
+    try:
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor()
+            
+        # 사용자 조회
+        cursor.execute(
+            "SELECT user_id, email, password, nickname FROM users WHERE email = %s",
+            (email,)
+        )
+        user_data = cursor.fetchone()
+        
+        if not user_data:
+            flash('이메일 또는 비밀번호가 일치하지 않습니다.', 'error')
+            return redirect(url_for('login'))
+            
+        # 비밀번호 검증
+        if not check_password_hash(user_data[2], password):
+            flash('이메일 또는 비밀번호가 일치하지 않습니다.', 'error')
+            return redirect(url_for('login'))
+
+        # 로그인 처리
+        user = User(user_data[0], user_data[1], user_data[3])
+        login_user(user)
+            
+        # 마지막 로그인 시간 업데이트
+        cursor.execute(
+            "UPDATE users SET last_login = %s WHERE user_id = %s",
+            (datetime.now(), user.id)
+        )
+        conn.commit()
+
+        flash(f'{user.nickname}님, 환영합니다! 🎉', 'success')
+        return redirect(url_for('index'))
+      
+    except Exception as e:
+        flash(f'로그인 중 오류가 발생했습니다: {str(e)}', 'error')
+        return redirect(url_for('login'))
+    finally:
+        if conn:
+            conn.close()
+    
+    return render_template('login.html')
+    
+# 로그아웃 라우트
+@app.route('/logout')
+@login_required
+def logout():
+    nickname = current_user.nickname
+    logout_user()
+    flash(f'{nickname}님, 안전하게 로그아웃되었습니다.', 'info')
+    return redirect(url_for('login'))
+
+# 실행
 if __name__ == '__main__':
+
     # 웹드라이버가 HTTPS 통신을 수행하므로 SSL 인증서 검증 우회 코드를 main 실행 전에 유지
     ssl._create_default_https_context = ssl._create_unverified_context
     

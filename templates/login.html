@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - SecondPick</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: #4A60E3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 420px;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 48px;
+            display: block !important;
+            width: 100% !important; 
+        }
+        
+        h1 {
+            text-align: center;
+            color:#4A60E3;
+            margin-bottom: 40px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: #f9fafb;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #4A60E3;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(74, 96, 227, 0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: #4A60E3;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            background: #3a4bbd;
+            box-shadow: 0 10px 25px rgba(74, 96, 227, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .link-group {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .link-group a {
+            color: #4A60E3;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+        
+        .link-group a:hover {
+            color: #764BA2;
+            text-decoration: underline;
+        }
+        
+        .flash-messages {
+            margin-bottom: 24px;
+        }
+        
+        .flash {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .flash.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #fecaca;
+        }
+        
+        .flash.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #a7f3d0;
+        }
+        
+        .flash.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 2px solid #bfdbfe;
+        }
+
+        a[href="/"] {
+            display: block !important;
+            text-align: center !important;
+            width: 100% !important;
+        }
+    
+        a[href="/"] img {
+            margin-left: auto !important;
+            margin-right: auto !important;
+            display: block !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <a href="/" style="text-decoration: none; color: inherit; display: block; cursor: pointer;">
+            <div style="text-align: center;">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" 
+                alt="SecondPick Logo" 
+                style="height: 80px; width: auto; cursor: pointer; display: block; margin-bottom: 10px;">
+            </div>
+        <h1 style="color: #4A60E3; text-align: center; margin-bottom: 40px; font-size: 28px; font-weight: 700;">
+            SecondPick 로그인
+        </h1>
+    </a>
+
+        
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="email">이메일</label>
+                <input type="email" id="email" name="email" required 
+                       placeholder="example@email.com" autocomplete="email">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">비밀번호</label>
+                <input type="password" id="password" name="password" required 
+                       placeholder="비밀번호를 입력하세요" autocomplete="current-password">
+            </div>
+            
+            <button type="submit" class="btn">로그인</button>
+        </form>
+        
+        <div class="link-group">
+            <a href="{{ url_for('register') }}">계정이 없으신가요? 회원가입 →</a>
+        </div>
+    </div>
+</body>
+</html>

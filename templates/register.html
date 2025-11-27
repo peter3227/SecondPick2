@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - SecondPick</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: #4A60E3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .register-container {
+            background: white;
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 420px;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 48px;
+        }
+        
+        h1 {
+            text-align: center;
+            color:#4A60E3;
+            margin-bottom: 40px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: #f9fafb;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: #4A60E3;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .link-group {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .link-group a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+        
+        .link-group a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        .flash-messages {
+            margin-bottom: 24px;
+        }
+        
+        .flash {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .flash.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #fecaca;
+        }
+        
+        .flash.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #a7f3d0;
+        }
+        
+        .password-hint {
+            position: absolute;
+            top: -60px;
+            left: 0;
+            right: 0;
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            display: none;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            animation: fadeIn 0.3s ease-out;
+            line-height: 1.5;
+
+        }
+        
+        .password-hint.show {
+            display: block;
+        }
+        
+        .password-hint::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #ffeaa7;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .helper-text {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 6px;
+        }
+
+        a[href="/"] {
+            display: block !important;
+            text-align: center !important;
+            width: 100% !important;
+        }
+    
+        a[href="/"] img {
+            margin-left: auto !important;
+            margin-right: auto !important;
+            display: block !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <a href="/" style="text-decoration: none; color: inherit; display: block; cursor: pointer; text-align: center;">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" 
+                alt="SecondPick Logo" 
+                style="height: 80px; width: auto; display: block; margin-bottom: 10px;">
+            <h1 style="color: #4A60E3; text-align: center; margin-bottom: 40px; font-size: 28px; font-weight: 700;">
+                SecondPick 회원가입
+            </h1>
+        </a>
+
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label for="email">이메일</label>
+                <input type="email" id="email" name="email" required 
+                       placeholder="example@email.com" autocomplete="email">
+            </div>
+            
+            <div class="form-group" style="position: relative;">
+                <div class="password-hint" id="passwordHint">
+                    ⚠️ 비밀번호는 최소 8자 이상이어야 하며,<br> 대문자, 소문자, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.
+                </div>
+                
+                <label for="password">비밀번호</label>
+                <input type="password" id="password" name="password" required 
+                       placeholder="8자 이상 입력하세요" autocomplete="new-password">
+            </div>
+            
+            <div class="form-group">
+                <label for="nickname">닉네임</label>
+                <input type="text" id="nickname" name="nickname" required 
+                       placeholder="사용할 닉네임을 입력하세요" autocomplete="nickname">
+            </div>
+            
+            <button type="submit" class="btn">회원가입</button>
+        </form>
+        
+        <div class="link-group">
+            <a href="{{ url_for('login') }}">← 이미 계정이 있으신가요?</a>
+        </div>
+    </div>
+    
+    <script>
+        const passwordInput = document.getElementById('password');
+        const passwordHint = document.getElementById('passwordHint');
+
+        passwordInput.addEventListener('focus', function() {
+            passwordHint.classList.add('show');
+        });
+
+        passwordInput.addEventListener('blur', function() {
+            passwordHint.classList.remove('show');
+        });
+    </script>
+</body>
+</html>
