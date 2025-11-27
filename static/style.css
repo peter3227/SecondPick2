@@ -472,3 +472,42 @@ header {
         margin-top: 10px;
     }
 }
+
+/* static/style.css 에 추가할 내용 */
+
+.flash-messages-container {
+    max-width: 1200px;
+    margin: 20px auto 0 auto;
+    padding: 0 20px;
+}
+
+.flash-messages {
+    margin-bottom: 20px;
+}
+
+.flash {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.flash-error {
+    background-color: #fef2f2; /* Red-100 */
+    color: #b91c1c; /* Red-700 */
+    border: 1px solid #fecaca; /* Red-300 */
+}
+
+.flash-success {
+    background-color: #ecfdf5; /* Green-100 */
+    color: #065f46; /* Green-700 */
+    border: 1px solid #a7f3d0; /* Green-300 */
+}
+
+.flash-info {
+    background-color: #eff6ff; /* Blue-100 */
+    color: #1e40af; /* Blue-700 */
+    border: 1px solid #bfdbfe; /* Blue-300 */
+}
