@@ -1,365 +1,432 @@
 import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
-
 import time
-from flask import Flask, render_template, request, session
-from datetime import datetime, timedelta 
-
-import undetected_chromedriver as uc 
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from selenium.webdriver.support.ui import WebDriverWait 
-from selenium.webdriver.support import expected_conditions as EC 
-
-import sys
 import re
-import json 
-import random 
-import requests 
-from requests.packages.urllib3.exceptions import InsecureRequestWarning 
-from urllib.parse import quote 
+import json
+import random
+import sys
+from urllib.parse import quote
+from datetime import datetime, timedelta
 
-sys.stdout.reconfigure(encoding='utf-8')
+# Selenium
+import undetected_chromedriver as uc
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
-app = Flask(__name__)
-
-app.secret_key = 'your_unique_and_complex_secret_key'
-
-# --- Jinja2 필터 등록 (가격 포맷) ---
-def format_currency(value):
-    """숫자를 통화 형식 문자열로 포맷하는 헬퍼 함수"""
-    try:
-        if isinstance(value, str):
-            value = str(value).replace(',', '')
-        if int(value) > 100000000: 
-             return "0"
-        return f"{int(value):,}"
-    except:
-        return str(value)
-
-app.jinja_env.filters['format_currency'] = format_currency
+# Flask
+from flask import Flask, render_template, request, session
 
 
-# --- 1. WebDriver 및 유틸리티 함수 ---
+# sys.stdout.reconfigure(encoding='utf-8') # Flask 환경에서는 필요하지 않습니다.
 
-def get_webdriver():
-    """undetected_chromedriver를 사용하여 봇 탐지를 우회하는 웹드라이버를 반환합니다."""
-    print("🌐 WebDriver 초기화 (undetected-chromedriver 사용)")
-    
-    options = uc.ChromeOptions() 
-    
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--disable-blink-features=AutomationControlled") 
-    options.add_argument('--headless') 
-
-    mobile_user_agents = [
+# ====================================================================
+# 1. 환경 설정 및 상수 관리
+# ====================================================================
+class AppConfig:
+    """애플리케이션 전반에 걸쳐 사용되는 설정 및 상수"""
+    SECRET_KEY = 'your_unique_and_complex_secret_key'
+    MOBILE_USER_AGENTS = [
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
         'Mozilla/5.0 (Linux; Android 14; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36',
     ]
-    selected_user_agent = random.choice(mobile_user_agents)
-    options.add_argument(f"user-agent={selected_user_agent}")
-    
-    driver = None
-    try:
-        driver = uc.Chrome(options=options)
-        driver.set_window_size(414, 896) 
+    DEFAULT_WINDOW_SIZE = (414, 896)
+    DEFAULT_LATITUDE = 37.4979
+    DEFAULT_LONGITUDE = 127.0276
+    DEFAULT_TIMEOUT = 10
+
+
+# ====================================================================
+# 2. 유틸리티 함수 (WebDriver 외부 기능)
+# ====================================================================
+class Utils:
+    """데이터 클리닝, 포맷팅, 시간 계산 등의 헬퍼 함수"""
+
+    @staticmethod
+    def format_currency(value):
+        """숫자를 통화 형식 문자열로 포맷하는 Jinja2 헬퍼 함수"""
+        try:
+            if isinstance(value, str):
+                value = str(value).replace(',', '')
+            if int(value) > 100000000:
+                return "0"
+            return f"{int(value):,}"
+        except:
+            return str(value)
+
+    @staticmethod
+    def clean_price_string(price_raw):
+        """가격 문자열에서 숫자만 추출하여 int로 변환"""
+        price_raw = str(price_raw).strip()
+
+        if '만' in price_raw:
+            price_str = price_raw.split('만')[0].replace(',', '').strip()
+            try:
+                return int(float(price_str) * 10000)
+            except:
+                pass
+
+        if ('나눔' in price_raw or '배송비' in price_raw or '검수' in price_raw or '판매하기' in price_raw
+            or '판매완료' in price_raw or '예약중' in price_raw or price_raw.lower() in ('0원', '무료', '가격없음', '가격')):
+            return 0
+
+        price_str = re.sub(r'[^\d]', '', price_raw)
+        # 15자리 이상은 비정상적인 가격으로 간주
+        return int(price_str) if price_str.isdigit() and len(price_str) < 15 else 0
+
+    @staticmethod
+    def calculate_time_ago(date_string):
+        """시간/날짜 문자열을 파싱하여 'X분 전' 등으로 변환"""
+        now = datetime.now()
+        date_string = date_string.strip()
+
+        # 이미 포맷된 경우
+        if any(unit in date_string for unit in ["분 전", "시간 전", "일 전", "주 전", "방금 전"]):
+            return date_string
         
+        # 날짜 포맷 (예: 2023.11.27)
         try:
-             driver.execute_cdp_cmd(
-                 "Emulation.setGeolocationOverride",
-                 {
-                     "latitude": 37.4979, 
-                     "longitude": 127.0276, 
-                     "accuracy": 100
-                 }
-             )
-        except Exception as e:
-            print(f"위치 정보 설정 실패: {e}")
-            
-        return driver
-    except Exception as e:
-        print(f"❌ WebDriver 초기화 오류: {e}. 'undetected-chromedriver' 설치 상태를 확인해 주세요.")
-        return None
+            if len(date_string) == 10 and date_string.count('.') == 2:
+                post_date = datetime.strptime(date_string, "%Y.%m.%d")
+                diff = now - post_date
 
-def clean_price_string(price_raw):
-    """가격 문자열에서 숫자만 추출하여 int로 변환"""
-    price_raw = str(price_raw).strip()
-
-    if '만' in price_raw:
-        price_str = price_raw.split('만')[0].replace(',', '').strip()
-        try:
-            return int(float(price_str) * 10000)
+                if diff.days == 0:
+                    return "오늘"
+                elif diff.days < 7:
+                    return f"{diff.days}일 전"
+                else:
+                    return date_string
         except:
             pass
 
-    if ('나눔' in price_raw or '배송비' in price_raw or '검수' in price_raw or '판매하기' in price_raw 
-        or '판매완료' in price_raw or '예약중' in price_raw or price_raw.lower() in ('0원', '무료', '가격없음', '가격')):
-        return 0
-
-    price_str = re.sub(r'[^\d]', '', price_raw)
-    return int(price_str) if price_str.isdigit() and len(price_str) < 15 else 0
+        return date_string
 
 
-# --- Helper Function: 시간 차이 계산 ---
-def calculate_time_ago(date_string):
-    """
-    중고나라/당근마켓의 시간/날짜 문자열을 파싱하여 'X분 전' 또는 'X시간 전'으로 변환
-    """
-    now = datetime.now()
-    date_string = date_string.strip()
+# ====================================================================
+# 3. WebDriver 관리
+# ====================================================================
+class WebDriverFactory:
+    """undetected-chromedriver 인스턴스를 생성하고 설정합니다."""
 
-    if "분 전" in date_string:
-        minutes = int(re.sub(r'[^\d]', '', date_string))
-        return f"{minutes}분 전"
-    
-    if "시간 전" in date_string:
-        hours = int(re.sub(r'[^\d]', '', date_string))
-        return f"{hours}시간 전"
+    @staticmethod
+    def get_driver():
+        """봇 탐지를 우회하는 웹드라이버를 반환합니다."""
+        print("🌐 WebDriver 초기화 (undetected-chromedriver 사용)")
 
-    if "일 전" in date_string:
-        days = int(re.sub(r'[^\d]', '', date_string))
-        if days == 0: return "1시간 전"
-        return f"{days}일 전"
-    
-    if "주 전" in date_string:
-        weeks = int(re.sub(r'[^\d]', '', date_string))
-        return f"{weeks}주 전"
+        options = uc.ChromeOptions()
 
-    if "방금 전" in date_string or "1분 이내" in date_string:
-        return "방금 전"
-        
-    try:
-        if len(date_string) == 10 and date_string.count('.') == 2:
-            post_date = datetime.strptime(date_string, "%Y.%m.%d")
-            diff = now - post_date
-            
-            if diff.days == 0:
-                return "오늘"
-            elif diff.days < 7:
-                return f"{diff.days}일 전"
-            else:
-                return date_string
-    except:
-        pass
-    
-    return date_string
+        # Headless 및 봇 탐지 우회 설정
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_argument('--headless')
 
+        # 모바일 User-Agent 설정
+        selected_user_agent = random.choice(AppConfig.MOBILE_USER_AGENTS)
+        options.add_argument(f"user-agent={selected_user_agent}")
 
-# --- 2. 중고나라 크롤링 함수 ---
-def run_joongna_crawl(keyword, driver):
-    crawled_data = []
-    
-    try:
-        url = f"https://web.joongna.com/search/{keyword}"
-        driver.get(url)
-        time.sleep(3) 
-        
-        items = driver.find_elements(By.CSS_SELECTOR, "a[href*='/product/']") 
-        
-        for item in items[:10]: 
-            try:
-                full_text = item.text.split('\n')
-                title = full_text[0].strip()
-                
-                if not title or title == '판매하기': 
-                    continue
-
-                price_raw = full_text[1] if len(full_text) > 1 else "0원"
-                clean_price = clean_price_string(price_raw)
-                
-                if clean_price == 0:
-                    continue
-                    
-                link = item.get_attribute('href')
-                
-                date_posted = "날짜 정보 없음"
-                try:
-                    date_elem = item.find_element(By.CSS_SELECTOR, 'span.product-card-extra')
-                    date_posted_raw = date_elem.text.split('·')[-1].strip() 
-                    date_posted = calculate_time_ago(date_posted_raw) 
-                except:
-                    pass
-
-                img_url = "https://via.placeholder.com/150?text=No+Image" 
-                try:
-                    img_tag = item.find_element(By.TAG_NAME, 'img')
-                    img_url = img_tag.get_attribute('src')
-                except Exception:
-                    pass
-
-                crawled_data.append({
-                    'platform': '중고나라', 
-                    'title': title,
-                    'price': clean_price, 
-                    'link': link,
-                    'img_url': img_url,
-                    'date_posted': date_posted 
-                })
-            except Exception as e:
-                continue
-              
-    except Exception as e:
-        print(f"❌ 중고나라 크롤링 중 치명적인 오류 발생: {e}")
-    
-    return crawled_data
-
-
-# --- 3. 당근마켓 크롤링 함수 ---
-def run_danggeun_crawl(keyword, driver):
-    crawled_data = []
-    
-    encoded_keyword = quote(keyword)
-    url = f"https://www.daangn.com/search/{encoded_keyword}" 
-    
-    try:
-        driver.get(url)
-        
-        time.sleep(random.uniform(3, 5)) 
-        page_source = driver.page_source
-        
-        json_match = re.search(r'<script type="application/ld\+json">(.*?)</script>', page_source, re.DOTALL)
-        
-        if not json_match:
-            return []
-            
-        json_ld_string = json_match.group(1).strip()
-        
-        try:
-            data = json.loads(json_ld_string)
-        except json.JSONDecodeError as e:
-            return []
-
-        if 'itemListElement' not in data:
-            return []
-            
-        for list_item in data['itemListElement'][:10]:
-            try:
-                item_data = list_item['item']
-                
-                title = item_data['name']
-                link = item_data['url']
-                img_url = item_data['image']
-                
-                offer = item_data['offers']
-                price_raw = offer.get('price', '0')
-                availability = offer.get('availability', '')
-                
-                if 'OutOfStock' in availability or float(price_raw) == 0:
-                    continue
-
-                date_posted = "날짜 정보 없음" 
-
-                clean_price = int(float(price_raw))
-                
-                crawled_data.append({
-                    'platform': '당근마켓', 
-                    'title': title,
-                    'price': clean_price,      
-                    'link': link,
-                    'img_url': img_url,
-                    'date_posted': date_posted 
-                })
-            except Exception as e:
-                continue
-              
-    except Exception as e:
-        print(f"❌ 당근마켓 크롤링 중 치명적인 오류 발생: {e}")
-    
-    return crawled_data
-
-
-# --- 4. 번개장터 크롤링 함수 (제외 유지) ---
-def run_bunjang_crawl(keyword):
-    return []
-
-# --- 5. 메인 라우트 통합 ---
-@app.route('/', methods=['GET'])
-def index():
-    keyword = request.args.get('keyword')
-    sort_by = request.args.get('sort', 'latest')
-
-    all_items = []
-    platform_stats = session.get('platform_stats', {}) 
-
-    # 1. 세션에서 데이터 로드 시도
-    if keyword and (keyword != session.get('last_keyword') or 'all_items' not in session):
-        
         driver = None
         try:
-            driver = get_webdriver() 
-            
-            if driver:
-                joongna_items = run_joongna_crawl(keyword, driver)
-                danggeun_items = run_danggeun_crawl(keyword, driver)
-            else:
-                joongna_items = []
-                danggeun_items = []
+            # WebDriver 생성
+            driver = uc.Chrome(options=options)
+            driver.set_window_size(*AppConfig.DEFAULT_WINDOW_SIZE)
 
-            bunjang_items = run_bunjang_crawl(keyword) 
+            # 위치 정보 설정 (CDP Command)
+            try:
+                driver.execute_cdp_cmd(
+                    "Emulation.setGeolocationOverride",
+                    {
+                        "latitude": AppConfig.DEFAULT_LATITUDE,
+                        "longitude": AppConfig.DEFAULT_LONGITUDE,
+                        "accuracy": 100
+                    }
+                )
+            except Exception as e:
+                print(f"위치 정보 설정 실패: {e}")
 
-            all_items.extend(joongna_items)
-            all_items.extend(danggeun_items)
-            all_items.extend(bunjang_items)
-
-            # --- 플랫폼별 통계 계산 ---
-            def calculate_stats(items):
-                prices = [item['price'] for item in items if item['price'] > 0]
-                if not prices:
-                    return {'avg_price': 0, 'num_items': 0}
-                avg = int(sum(prices) / len(prices))
-                return {
-                    'avg_price': avg,
-                    'num_items': len(prices)
-                }
-
-            platform_stats['중고나라'] = calculate_stats(joongna_items)
-            platform_stats['당근마켓'] = calculate_stats(danggeun_items)
-            platform_stats['번개장터'] = calculate_stats(bunjang_items) 
-            
-            session['all_items'] = all_items 
-            session['last_keyword'] = keyword
-            session['platform_stats'] = platform_stats
-            
-        finally:
+            return driver
+        except Exception as e:
+            print(f"❌ WebDriver 초기화 오류: {e}. 'undetected-chromedriver' 설치 상태를 확인해 주세요.")
             if driver:
                 driver.quit()
-    
-    # 2. 크롤링 없이 세션에서 데이터 사용
-    else:
-        all_items = session.get('all_items', [])
-        
-        if not keyword:
-            all_items = []
+            return None
 
-    # --- 가격 통계 계산 및 정렬 ---
-    min_price = 0
-    max_price = 0
-    avg_price_all = 0 
+
+# ====================================================================
+# 4. 스크래퍼 베이스 및 플랫폼별 스크래퍼
+# ====================================================================
+class ScraperBase:
+    """모든 플랫폼 스크래퍼의 기본 클래스"""
+    PLATFORM_NAME = "Unknown"
+
+    def __init__(self, driver):
+        self.driver = driver
+
+    def run_crawl(self, keyword):
+        """크롤링 로직을 실행하고 결과를 반환합니다. (구현 필요)"""
+        raise NotImplementedError("Subclass must implement abstract method")
     
-    if all_items:
-        valid_prices = [item['price'] for item in all_items if item['price'] > 0]
+    def _parse_item(self, **kwargs):
+        """공통 데이터 구조로 아이템을 파싱"""
+        return {
+            'platform': self.PLATFORM_NAME,
+            'title': kwargs.get('title', ''),
+            'price': kwargs.get('price', 0),
+            'link': kwargs.get('link', ''),
+            'img_url': kwargs.get('img_url', "https://via.placeholder.com/150?text=No+Image"),
+            'date_posted': kwargs.get('date_posted', '날짜 정보 없음')
+        }
+
+
+class JoongnaScraper(ScraperBase):
+    """중고나라 크롤링 로직"""
+    PLATFORM_NAME = "중고나라"
+    
+    def run_crawl(self, keyword):
+        crawled_data = []
+        try:
+            url = f"https://web.joongna.com/search/{quote(keyword)}"
+            self.driver.get(url)
+            time.sleep(3) # 로딩 대기
+
+            # 상품 목록 CSS Selector
+            items = self.driver.find_elements(By.CSS_SELECTOR, "a[href*='/product/']")
+
+            for item in items[:10]:
+                try:
+                    full_text = item.text.split('\n')
+                    title = full_text[0].strip()
+
+                    if not title or title == '판매하기':
+                        continue
+
+                    price_raw = full_text[1] if len(full_text) > 1 else "0원"
+                    clean_price = Utils.clean_price_string(price_raw)
+
+                    if clean_price == 0:
+                        continue
+
+                    link = item.get_attribute('href')
+                    
+                    # 날짜 추출
+                    date_posted = "날짜 정보 없음"
+                    try:
+                        date_elem = item.find_element(By.CSS_SELECTOR, 'span.product-card-extra')
+                        date_posted_raw = date_elem.text.split('·')[-1].strip()
+                        date_posted = Utils.calculate_time_ago(date_posted_raw)
+                    except:
+                        pass
+                        
+                    # 이미지 추출
+                    img_url = "https://via.placeholder.com/150?text=No+Image"
+                    try:
+                        img_tag = item.find_element(By.TAG_NAME, 'img')
+                        img_url = img_tag.get_attribute('src')
+                    except:
+                        pass
+
+                    crawled_data.append(self._parse_item(
+                        title=title, price=clean_price, link=link, 
+                        img_url=img_url, date_posted=date_posted
+                    ))
+                except Exception:
+                    continue
+
+        except Exception as e:
+            print(f"❌ 중고나라 크롤링 중 치명적인 오류 발생: {e}")
+
+        return crawled_data
+
+
+class DanggeunScraper(ScraperBase):
+    """당근마켓 크롤링 로직 (JSON-LD 활용)"""
+    PLATFORM_NAME = "당근마켓"
+
+    def run_crawl(self, keyword):
+        crawled_data = []
+        encoded_keyword = quote(keyword)
+        url = f"https://www.daangn.com/search/{encoded_keyword}"
+
+        try:
+            self.driver.get(url)
+            # 페이지 로딩 및 클라이언트 측 렌더링 대기
+            time.sleep(random.uniform(3, 5))
+            page_source = self.driver.page_source
+
+            # JSON-LD 스크립트 태그 추출
+            json_match = re.search(r'<script type="application/ld\+json">(.*?)</script>', page_source, re.DOTALL)
+
+            if not json_match:
+                print("당근마켓 JSON-LD 데이터 찾기 실패.")
+                return []
+
+            json_ld_string = json_match.group(1).strip()
+            data = json.loads(json_ld_string)
+
+            if 'itemListElement' not in data:
+                return []
+
+            for list_item in data['itemListElement'][:10]:
+                try:
+                    item_data = list_item['item']
+                    offer = item_data['offers']
+
+                    title = item_data['name']
+                    link = item_data['url']
+                    img_url = item_data.get('image', "https://via.placeholder.com/150?text=No+Image")
+                    
+                    price_raw = offer.get('price', '0')
+                    availability = offer.get('availability', '')
+
+                    # 품절 또는 0원 상품 제외
+                    if 'OutOfStock' in availability or float(price_raw) == 0:
+                        continue
+                        
+                    clean_price = int(float(price_raw))
+                    
+                    # 당근마켓 JSON-LD에는 정확한 게시 시간 정보가 포함되지 않아 '날짜 정보 없음' 유지
+                    crawled_data.append(self._parse_item(
+                        title=title, price=clean_price, link=link, 
+                        img_url=img_url, date_posted="날짜 정보 없음"
+                    ))
+                except Exception:
+                    continue
+
+        except Exception as e:
+            print(f"❌ 당근마켓 크롤링 중 치명적인 오류 발생: {e}")
+
+        return crawled_data
+
+
+class BunjangScraper(ScraperBase):
+    """번개장터 크롤링 로직 (현재는 제외)"""
+    PLATFORM_NAME = "번개장터"
+
+    def run_crawl(self, keyword):
+        # 현재는 번개장터 스크래핑 로직이 비어있으므로 빈 리스트 반환
+        return []
+
+
+# ====================================================================
+# 5. Flask 애플리케이션 및 라우트 관리
+# ====================================================================
+class App:
+    """Flask 애플리케이션 정의 및 메인 로직"""
+
+    def __init__(self):
+        # SSL 경고/에러 무시 (undetected-chromedriver 사용 시 필요)
+        ssl._create_default_https_context = ssl._create_unverified_context
         
-        if valid_prices:
-            min_price = min(valid_prices)
-            max_price = max(valid_prices)
-            avg_price_all = int(sum(valid_prices) / len(valid_prices))
+        self.app = Flask(__name__)
+        self.app.secret_key = AppConfig.SECRET_KEY
+        
+        # Jinja2 필터 등록
+        self.app.jinja_env.filters['format_currency'] = Utils.format_currency
+        
+        # 라우트 등록
+        self.app.add_url_rule('/', view_func=self.index, methods=['GET'])
+
+    def run(self, debug=True):
+        """Flask 앱 실행"""
+        self.app.run(debug=debug)
+        
+    def _calculate_platform_stats(self, items):
+        """플랫폼별 가격 통계 계산"""
+        prices = [item['price'] for item in items if item['price'] > 0]
+        if not prices:
+            return {'avg_price': 0, 'num_items': 0}
+        avg = int(sum(prices) / len(prices))
+        return {
+            'avg_price': avg,
+            'num_items': len(prices)
+        }
+
+    def _get_sorted_items_and_stats(self, keyword, sort_by):
+        """크롤링을 실행하거나 세션에서 데이터를 가져와 정렬하고 통계를 계산"""
+        
+        all_items = session.get('all_items', [])
+        platform_stats = session.get('platform_stats', {})
+        
+        # 새로운 키워드 검색이거나 세션 데이터가 없는 경우 크롤링 실행
+        is_new_search = keyword and (keyword != session.get('last_keyword') or not all_items)
+        
+        if is_new_search:
             
-        # 정렬
-        if sort_by == 'low_price':
-            all_items.sort(key=lambda x: x['price'])
-        elif sort_by == 'high_price':
-            all_items.sort(key=lambda x: x['price'], reverse=True)
-            
-    return render_template('index.html', 
-                           items=all_items, 
-                           keyword=keyword, 
-                           platform_stats=platform_stats,
-                           sort_by=sort_by,
-                           min_price=min_price, 
-                           max_price=max_price,
-                           avg_price_all=avg_price_all) 
+            driver = None
+            try:
+                driver = WebDriverFactory.get_driver()
+                
+                if driver:
+                    # 플랫폼별 스크래퍼 인스턴스 생성 및 크롤링 실행
+                    joongna_items = JoongnaScraper(driver).run_crawl(keyword)
+                    danggeun_items = DanggeunScraper(driver).run_crawl(keyword)
+                else:
+                    # 드라이버 초기화 실패 시 빈 리스트
+                    joongna_items = []
+                    danggeun_items = []
+
+                bunjang_items = BunjangScraper(None).run_crawl(keyword) # driver 필요 없음
+                
+                all_items = joongna_items + danggeun_items + bunjang_items
+
+                # 플랫폼별 통계 계산 및 저장
+                platform_stats['중고나라'] = self._calculate_platform_stats(joongna_items)
+                platform_stats['당근마켓'] = self._calculate_platform_stats(danggeun_items)
+                platform_stats['번개장터'] = self._calculate_platform_stats(bunjang_items)
+
+                session['all_items'] = all_items
+                session['last_keyword'] = keyword
+                session['platform_stats'] = platform_stats
+
+            finally:
+                if driver:
+                    driver.quit()
+        elif not keyword:
+            all_items = []
+            platform_stats = {}
+
+        # --- 가격 통계 계산 및 정렬 ---
+        min_price, max_price, avg_price_all = 0, 0, 0
+
+        if all_items:
+            valid_prices = [item['price'] for item in all_items if item['price'] > 0]
+
+            if valid_prices:
+                min_price = min(valid_prices)
+                max_price = max(valid_prices)
+                avg_price_all = int(sum(valid_prices) / len(valid_prices))
+
+            # 정렬
+            if sort_by == 'low_price':
+                all_items.sort(key=lambda x: x['price'])
+            elif sort_by == 'high_price':
+                all_items.sort(key=lambda x: x['price'], reverse=True)
+            # 'latest'는 크롤링 순서이므로 별도 처리 필요 없음
+
+        return all_items, platform_stats, min_price, max_price, avg_price_all
+        
+    def index(self):
+        """메인 검색 및 결과 페이지 라우트"""
+        keyword = request.args.get('keyword')
+        sort_by = request.args.get('sort', 'latest')
+
+        all_items, platform_stats, min_price, max_price, avg_price_all = \
+            self._get_sorted_items_and_stats(keyword, sort_by)
+
+        return render_template('index.html',
+                               items=all_items,
+                               keyword=keyword,
+                               platform_stats=platform_stats,
+                               sort_by=sort_by,
+                               min_price=min_price,
+                               max_price=max_price,
+                               avg_price_all=avg_price_all)
+
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # 웹드라이버가 HTTPS 통신을 수행하므로 SSL 인증서 검증 우회 코드를 main 실행 전에 유지
+    ssl._create_default_https_context = ssl._create_unverified_context
+    
+    app_instance = App()
+    app_instance.run(debug=True)

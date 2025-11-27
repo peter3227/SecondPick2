@@ -1,0 +1,474 @@
+:root {
+    --primary-blue: #4A60E3;
+    --light-blue: #EAF0FF;
+    --text-dark: #333333;
+    --text-gray: #6C757D;
+    --bg-light: #F8F9FA;
+    --border-light: #DEE2E6;
+    --white: #FFFFFF;
+    --joongna-color: #38c64d;
+    --danggeun-color: #ff914d;
+    --bunjang-color: #3b3b3b;
+}
+
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    margin: 0;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 40px;
+    background-color: var(--white);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary-blue);
+    text-decoration: none;
+}
+.header-icons {
+    display: flex;
+    align-items: center;
+}
+.header-icons .icon {
+    margin-left: 20px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.header-icons .icon:hover {
+    opacity: 0.8;
+}
+.header-icons .user-icon {
+    background-color: var(--primary-blue);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--white);
+    font-size: 16px;
+    width: 32px;
+    height: 32px;
+}
+.header-icons .user-icon i {
+    font-size: 16px;
+}
+
+/* Main Search Section (Landing Page) */
+.main-search-section {
+    background-color: var(--white);
+    padding: 80px 20px;
+    text-align: center;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+.main-search-section h1 {
+    font-size: 40px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: var(--text-dark);
+}
+.main-search-section p {
+    font-size: 18px;
+    color: var(--text-gray);
+    margin-bottom: 40px;
+}
+.search-form-main {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    max-width: 600px;
+    margin: 0 auto;
+    border: 2px solid var(--primary-blue);
+    border-radius: 50px;
+    overflow: hidden;
+    background-color: var(--white);
+}
+.search-form-main i {
+    color: var(--primary-blue);
+    padding-left: 15px;
+    display: flex;
+    align-items: center;
+}
+.search-form-main input[type="text"] {
+    flex-grow: 1;
+    padding: 15px 10px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+}
+.search-form-main button {
+    padding: 15px 30px;
+    background-color: var(--primary-blue);
+    color: var(--white);
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.search-form-main button:hover {
+    background-color: #3a4bbd;
+}
+.recent-search {
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--text-gray);
+}
+.recent-search strong {
+    color: var(--primary-blue);
+    font-weight: 700;
+}
+
+/* Feature Cards Section */
+.feature-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 0 20px;
+    margin-top: -30px; /* 메인 섹션과 겹치도록 조정 */
+}
+.feature-card {
+    background-color: var(--white);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    text-align: left;
+    transition: transform 0.2s;
+}
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+.feature-card .icon-box {
+    width: 40px;
+    height: 40px;
+    background-color: var(--light-blue);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    color: var(--primary-blue);
+    font-size: 18px;
+}
+.feature-card h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+.feature-card p {
+    font-size: 15px;
+    color: var(--text-gray);
+    line-height: 1.5;
+}
+
+/* Search Results Section */
+.search-results-section {
+    padding: 30px 0;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+.results-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+}
+.results-header p {
+    font-size: 16px;
+    color: var(--text-gray);
+    margin: 0 0 30px 0;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 20px;
+}
+.results-header strong {
+    color: var(--primary-blue);
+}
+
+.platform-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 40px;
+}
+.platform-summary-card {
+    background-color: var(--white);
+    padding: 25px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    text-align: left;
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+.platform-summary-card h3 {
+    font-size: 18px;
+    font-weight: 500;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+.platform-summary-card .price {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+.platform-summary-card .meta {
+    font-size: 14px;
+    color: var(--text-gray);
+}
+.platform-summary-card .icon-box {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    width: 30px;
+    height: 30px;
+    background-color: var(--light-blue);
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--primary-blue);
+    font-size: 14px;
+}
+/* Platform specific colors */
+.중고나라 .price { color: var(--joongna-color); }
+.당근마켓 .price { color: var(--danggeun-color); }
+.번개장터 .price { color: var(--bunjang-color); }
+
+
+.sort-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+.sort-buttons button {
+    padding: 8px 15px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background-color: var(--white);
+    color: var(--text-dark);
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.sort-buttons button.active {
+    background-color: var(--primary-blue);
+    color: var(--white);
+    border-color: var(--primary-blue);
+}
+.sort-buttons button:not(.active):hover {
+    background-color: var(--bg-light);
+}
+
+/* Product List */
+.product-list {
+    display: grid;
+    gap: 15px;
+}
+.product-card {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: var(--white);
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s;
+    line-height: 1.4;
+}
+.product-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+.product-card img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-right: 20px;
+}
+.product-info {
+    flex-grow: 1;
+}
+.product-info h4 {
+    font-size: 18px;
+    font-weight: 500;
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+.product-info .price {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-blue);
+    margin-bottom: 5px;
+}
+.product-info .platform {
+    font-size: 13px;
+    color: var(--text-gray);
+    font-weight: 500;
+}
+.product-card .date {
+    font-size: 14px;
+    color: var(--text-gray);
+    margin-left: auto;
+}
+
+/* 가격 바 스타일 */
+.price-bar-container {
+    width: 100%;
+    height: 10px;
+    background-color: var(--bg-light);
+    border-radius: 5px;
+    margin-top: 10px;
+    position: relative;
+}
+.price-bar-min-max {
+    width: 100%;
+    height: 100%;
+    background-color: var(--light-blue);
+    border-radius: 5px;
+}
+.price-bar-current {
+    position: absolute;
+    top: -3px; /* 중앙 정렬을 위해 위로 살짝 올림 */
+    width: 16px;
+    height: 16px;
+    background-color: var(--primary-blue);
+    border: 2px solid var(--white);
+    border-radius: 50%;
+    z-index: 10;
+    transform: translateX(-50%); /* 중심 맞추기 */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.price-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-gray);
+    margin-top: 5px;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none; /* Initial state */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-overlay.active {
+    display: flex;
+}
+.modal-content {
+    background-color: var(--white);
+    padding: 30px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+.modal-content h3 {
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 30px;
+}
+.modal-content .close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-gray);
+    cursor: pointer;
+}
+.modal-content .input-group {
+    margin-bottom: 20px;
+}
+.modal-content input {
+    width: 90%;
+    padding: 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 16px;
+    outline-color: var(--primary-blue);
+}
+.modal-content button.primary {
+    width: 100%;
+    padding: 15px;
+    background-color: var(--primary-blue);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.modal-content button.primary:hover {
+    background-color: #3a4bbd;
+}
+.modal-content .link-text {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: var(--primary-blue);
+    text-decoration: none;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+/* Utility Classes */
+.text-center { text-align: center; }
+.text-중고나라 { color: var(--joongna-color); }
+.text-당근마켓 { color: var(--danggeun-color); }
+.text-번개장터 { color: var(--bunjang-color); }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .feature-cards, .platform-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 600px) {
+    header {
+        padding: 10px 20px;
+    }
+    .main-search-section {
+        padding: 50px 20px;
+    }
+    .search-form-main {
+        border-radius: 8px;
+    }
+    .product-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .product-card img {
+        margin-bottom: 15px;
+        margin-right: 0;
+    }
+    .product-card .date {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+}
